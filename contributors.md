@@ -1,7 +1,7 @@
-**Team CAMBRIDGE**
+# Team CAMBRIDGE
 
-___Team Members:___
-- Colton Richie
-- Patrick Do
-- Rianice Cuebas-Blanco
-- Uyen Vu
+## Team Members
+- **Colton Richie**
+- **Patrick Do**
+- **Rianice Cuebas-Blanco**
+- **Uyen Vu**
