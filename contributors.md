@@ -1,6 +1,6 @@
 **Team CAMBRIDGE**
 
-__Team Members:__
+___Team Members:___
 - Colton Richie
 - Patrick Do
 - Rianice Cuebas-Blanco
