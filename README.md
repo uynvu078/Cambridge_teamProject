@@ -4,17 +4,17 @@ A web-based **User Management System** that leverages **Office 365 authenticatio
 
 ---
 
-## 📌 Features
-✅ **Office 365 Authentication** - Users log in with their Microsoft accounts.  
-✅ **User Management (CRUD)** - Admins can create, read, update, and delete user accounts.  
-✅ **Role-Based Access Control (RBAC)** - Assign different roles (Admin, Basic User).  
-✅ **User Deactivation & Reactivation** - Admins can disable and enable accounts.  
-✅ **Secure Password Management** - Uses Django authentication best practices.  
-✅ **Intuitive UI** - Clean and user-friendly login and dashboard interface.  
+## Features
+- **Office 365 Authentication** - Users log in with their Microsoft accounts.  
+- **User Management (CRUD)** - Admins can create, read, update, and delete user accounts.  
+- **Role-Based Access Control (RBAC)** - Assign different roles (Admin, Basic User).  
+- **User Deactivation & Reactivation** - Admins can disable and enable accounts.  
+- **Secure Password Management** - Uses Django authentication best practices.  
+- **Intuitive UI** - Clean and user-friendly login and dashboard interface.  
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 - **Backend**: Django, Python  
 - **Frontend**: HTML, CSS  
 - **Database**: PostgreSQL  
