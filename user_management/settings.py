@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.microsoft',
+    
+    'users',
 ]
 
 
@@ -181,3 +183,11 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
     }
 }
+
+AUTH_USER_MODEL = "users.CustomUser"
+
+# ⚡ Configure Django Allauth to use Username instead of Email
+ACCOUNT_LOGIN_METHODS = {"username", "email"}
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_EMAIL_VERIFICATION = "none" 
