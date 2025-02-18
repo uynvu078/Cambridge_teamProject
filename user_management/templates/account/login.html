@@ -1,0 +1,145 @@
+{% load i18n %}
+{% load account socialaccount %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            height: 600px;
+            text-align: center;
+        }
+
+        .login-container h2 {
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        label {
+            align-self: flex-start;
+            font-weight: bold;
+            margin-bottom: 5px;
+            width: 100%;
+        }
+
+        input {
+            width: 80%;
+            padding: 12px;
+            margin: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin: 15px;
+        }
+
+        .forgot-password a {
+            text-decoration: none;
+            color: #0078D4;
+            font-weight: bold;
+        }
+
+        .remember-me {
+            align-self: center;
+            align-items: center;
+            gap: 5px;
+            margin: 10px;
+        }
+
+        .remember-me label {
+            font-weight: normal;
+        }
+
+        button {
+            width: 80%;
+            padding: 12px;
+            margin: 20px;
+            background: #0078D4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #005A9E;
+        }
+
+        .microsoft-login {
+            margin: 15px;
+        }
+
+        .microsoft-login a {
+            text-decoration: none;
+            color: #0078D4;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Sign in to User Management</h2>
+
+        {% if form.errors %}
+            <p style="color: red;">Invalid username or password. Try again.</p>
+        {% endif %}
+
+        <form method="POST" action="{% url 'account_login' %}">
+            {% csrf_token %}
+
+            <label for="{{ form.login.id_for_label }}">Username or Email</label>
+            {{ form.login }}
+
+            <label for="{{ form.password.id_for_label }}">Password</label>
+            {{ form.password }}
+
+            <div class="forgot-password">
+                <a href="{% url 'account_reset_password' %}">Forgot your password?</a>
+            </div>
+
+            <div class="remember-me">
+                {{ form.remember }}
+                <label for="{{ form.remember.id_for_label }}">Remember Me</label>
+            </div>
+
+            <button type="submit">Sign In</button>
+        </form>
+
+        <div class="microsoft-login">
+            <p>Or sign in with:</p>
+            <a href="{% provider_login_url 'microsoft' %}">🔹 Microsoft Login</a>
+        </div>
+
+        <p>Don't have an account? <a href="{% url 'account_signup' %}">Sign up</a></p>
+    </div>
+</body>
+</html>
