@@ -2,7 +2,9 @@
 
 {% block content %}
 <h2>User Management</h2>
-    <a href="{% url 'user_create' %}">➕ Add New User</a>
+    {% if request.user.role == "admin" %}
+        <a href="{% url 'user_create' %}">➕ Add New User</a>
+    {% endif %}
     <table>
         <tr>
             <th>Username</th>
@@ -18,8 +20,10 @@
             <td>{{ user.role }}</td>
             <td>{{ user.is_active|yesno:"Active,Inactive" }}</td>
             <td>
-                <a href="{% url 'user_update' user.pk %}">✏️ Edit</a>
-                <a href="{% url 'user_delete' user.pk %}" style="color:red;">❌ Delete</a>
+                {% if request.user.role == "admin" %}
+                    <a href="{% url 'user_update' user.pk %}">✏️ Edit</a>
+                    <a href="{% url 'user_delete' user.pk %}" style="color:red;">❌ Delete</a>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
