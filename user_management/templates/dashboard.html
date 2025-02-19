@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Welcome to Your Dashboard</h1>
+  <ul>
+    <li><a href="{% url 'user_list' %}">User List</a></li>
+    <li><a href="{% url 'user_create' %}">Create User</a></li>
+    <li><a href="{% url 'user_update' 1 %}">Edit User</a></li>  <!-- Replace with actual user ID -->
+    <li><a href="{% url 'user_delete' 1 %}">Delete User</a></li>  <!-- Replace with actual user ID -->
+  </ul>
+{% endblock %}

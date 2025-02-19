@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.microsoft',
     
     'users',
+
+    'django_extensions',
 ]
 
 
