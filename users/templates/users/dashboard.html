@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Welcome to the User Management System</h2>
+
+{% if request.user.is_superuser %}
+    <p><a href="{% url 'user_list' %}">🔹 Manage Users</a></p>
+{% endif %}
+
+<p><a href="{% url 'account_logout' %}">🚪 Logout</a></p>
+{% endblock %}
