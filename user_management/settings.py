@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'users',
 
     'django_extensions',
+    "bootstrap4",
 ]
 
 
@@ -145,7 +146,7 @@ SITE_ID = 1  # Required for Django Allauth
 
 # Redirect URLs
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 # Microsoft OAuth Settings
 SOCIALACCOUNT_PROVIDERS = {

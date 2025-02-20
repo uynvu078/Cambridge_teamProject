@@ -25,12 +25,15 @@ from django.shortcuts import render
 # Dashboard
 def dashboard_view(request):
     return render(request, 'dashboard.html')
+def home_view(request):
+    return HttpResponse("<h1>Welcome to User Management</h1><p><a href='/dashboard/'>Go to Dashboard</a></p>")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('dashboard/', dashboard_view, name='dashboard'),
     path('users/', include('users.urls')),
+    path("", home_view, name="home"),
 ]
 
 
