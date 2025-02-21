@@ -9,7 +9,15 @@ class UserForm(forms.ModelForm):
         fields = ['username', 'email', 'role', 'is_active']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop("user", None) #Get logged-in user
+        user = kwargs.pop("user", None)  # Get logged-in user
         super().__init__(*args, **kwargs)
+        
+        # If the logged-in user is NOT an admin, disable role selection
         if user and user.role != "admin":
-            self.fields["role"].disabled = True #Prevent non-admins form changing roles
+            self.fields["role"].disabled = True
+        else:
+            # Admin can assign roles, so allow both 'basicuser' and 'admin'
+            self.fields["role"].choices = [
+                ("basicuser", "Basic User"),
+                ("admin", "Admin")
+            ]
