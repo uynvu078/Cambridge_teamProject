@@ -43,6 +43,15 @@
                     <a href="{% url 'user_delete' user.pk %}" class="delete-btn">❌ Delete</a>
                 {% endif %}
             </td>
+            <td>
+                {% if request.user.role == "admin" %}
+                    {% if user.is_active %}
+                        <a href="{% url 'deactivate_user' user.id %}">Deactivate</a>
+                    {% else %}
+                        <a href="{% url 'reactivate_user' user.id %}">Reactivate</a>
+                    {% endif %}
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </table>

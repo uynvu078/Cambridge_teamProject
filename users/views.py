@@ -9,6 +9,8 @@ from django.http import HttpResponseForbidden
 from functools import wraps
 from .models import CustomUser
 from django.core.paginator import Paginator
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import get_object_or_404, redirect
 
 
 def admin_required(view_func):
@@ -95,3 +97,28 @@ def user_delete(request, pk):
         messages.success(request, "User deleted successfully!")
         return redirect('user_list')
     return render(request, 'users/user_confirm_delete.html', {'user': user})
+
+def is_admin(user):
+    return user.is_authenticated and user.role == 'admin'
+
+@user_passes_test(is_admin)
+def deactivate_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if user.is_active:
+        user.is_active = False
+        user.save()
+        messages.success(request, f'User {user.username} has been deactivated.')
+    else:
+        messages.info(request, f'User {user.username} is already deactivated.')
+    return redirect('user_list')
+
+@user_passes_test(is_admin)
+def reactivate_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if not user.is_active:
+        user.is_active = True
+        user.save()
+        messages.success(request, f'User {user.username} has been reactivated.')
+    else:
+        messages.info(request, f'User {user.username} is already active.')
+    return redirect('user_list')
