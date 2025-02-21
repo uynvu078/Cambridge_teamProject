@@ -7,6 +7,9 @@ from django.contrib import messages
 from .forms import UserForm
 from django.http import HttpResponseForbidden
 from functools import wraps
+from .models import CustomUser
+from django.core.paginator import Paginator
+
 
 def admin_required(view_func):
     """Decorator to restrict accesss to admin users only."""
@@ -22,24 +25,51 @@ User = get_user_model()
 
 @login_required
 def user_list(request):
-    users = User.objects.all()
-    return render(request, 'users/user_list.html', {'users': users})
+    search_query = request.GET.get("search", "")
+    role_filter = request.GET.get("role", "")
+    sort_by = request.GET.get("sort_by", "username")  # Default sorting by username
+    order = request.GET.get("order", "asc")  # Default order is ascending
+
+    users = CustomUser.objects.all()
+
+    if search_query:
+        users = users.filter(username__icontains=search_query)
+    
+    if role_filter:
+        users = users.filter(role=role_filter)
+
+    if order == "desc":
+        users = users.order_by(f"-{sort_by}")
+    else:
+        users = users.order_by(sort_by)
+        
+    paginator = Paginator(users, 10)  # Show 10 users per page
+    page_number = request.GET.get("page")
+    users = paginator.get_page(page_number)
+
+    return render(request, "users/user_list.html", {
+        "users": users,
+        "search_query": search_query,
+        "role_filter": role_filter,
+        "sort_by": sort_by,
+        "order": order
+    })
 
 @login_required
 @admin_required
 def user_create(request):
     if request.method == "POST":
-        form = UserForm(request.POST, user=request.user)  # logged-in user
+        form = UserForm(request.POST, user=request.user)  
         if form.is_valid():
             user = form.save(commit=False)
-            if request.user.role == "admin":  # nly admins can set roles
+            if request.user.role == "admin":  
                 user.role = form.cleaned_data["role"]
             else:
-                user.role = "basicuser"  # Default role for non-admins
+                user.role = "basicuser"  
             user.save()
             return redirect("user_list")
     else:
-        form = UserForm(user=request.user)  # logged-in user
+        form = UserForm(user=request.user)  
     return render(request, "users/user_form.html", {"form": form})
 
 @login_required
