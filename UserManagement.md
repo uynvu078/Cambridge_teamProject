@@ -24,7 +24,7 @@ The User Management System is a web-based application that enables administrator
 - Users with "basicuser" role are restricted from accessing admin functions.
 - Role validation added to user forms to prevent unauthorized modifications.
 
-### **4. User Deactivation (Pending)**
+### **4. User Deactivation**
 - Administrators will be able to deactivate user accounts.
 - Deactivated users should not be able to log in or access system resources.
 - System will provide a mechanism for reactivating user accounts when needed.
