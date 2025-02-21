@@ -6,7 +6,7 @@ User = get_user_model()
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'email', 'role', 'status']
+        fields = ['username', 'email', 'role', 'is_active']
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None) #Get logged-in user
