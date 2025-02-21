@@ -29,14 +29,18 @@ def user_list(request):
 @admin_required
 def user_create(request):
     if request.method == "POST":
-        form = UserForm(request.POST, user=request.user) #Pass user to forms
+        form = UserForm(request.POST, user=request.user)  # logged-in user
         if form.is_valid():
-            form.save()
-            messages.success(request, "User created successfully!")
-            return redirect('user_list')
+            user = form.save(commit=False)
+            if request.user.role == "admin":  # nly admins can set roles
+                user.role = form.cleaned_data["role"]
+            else:
+                user.role = "basicuser"  # Default role for non-admins
+            user.save()
+            return redirect("user_list")
     else:
-        form = UserForm()
-    return render(request, 'users/user_form.html', {'form': form})
+        form = UserForm(user=request.user)  # logged-in user
+    return render(request, "users/user_form.html", {"form": form})
 
 @login_required
 @admin_required
