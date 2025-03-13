@@ -163,29 +163,15 @@ SOCIALACCOUNT_PROVIDERS = {
             'offline_access',
             'User.Read',
         ],
+        'AUTH_PARAMS': {
+            'prompt': 'select_account'
+        },
     }
 }
 
 LOGIN_REDIRECT_URL = "/dashboard/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/accounts/login/"
 ACCOUNT_ADAPTER = "allauth.account.adapter.DefaultAccountAdapter"
-
-SOCIALACCOUNT_PROVIDERS = {
-    'microsoft': {
-        'APP': {
-            'client_id': os.getenv("OAUTH_CLIENT_ID"),
-            'secret': os.getenv("OAUTH_CLIENT_SECRET"),
-            'key': '',
-        },
-        'SCOPE': [
-            'openid',
-            'email',
-            'profile',
-            'offline_access',
-            'User.Read',
-        ],
-    }
-}
 
 AUTH_USER_MODEL = "users.CustomUser"
 

@@ -1,0 +1,66 @@
+{% load i18n %}
+{% load account socialaccount %}
+
+{% block content %}
+<div class="microsoft-login-container">
+    <h2>Sign In With Microsoft</h2>
+    <p>You are about to sign in using your Microsoft account.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="microsoft-btn">Continue with <strong>Microsoft</strong> ➤</button>
+    </form>
+
+    <p><a href="{% url 'account_login' %}" class="back-link">⬅ Back to Login</a></p>
+</div>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #e3f2fd; /* Light Blue Background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .microsoft-login-container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        height: auto;
+        text-align: center;
+    }
+
+    .microsoft-login-container h2 {
+        margin-bottom: 20px;
+    }
+
+    .microsoft-btn {
+        width: 80%;
+        padding: 12px;
+        margin-top: 20px;
+        background: #107C10; /* Microsoft Green */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .microsoft-btn:hover {
+        background: #0B5A0B; /* Darker Green */
+    }
+
+    .back-link {
+        display: block;
+        margin-top: 15px;
+        text-decoration: none;
+        color: #0078D4;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
