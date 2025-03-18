@@ -21,3 +21,9 @@ class UserForm(forms.ModelForm):
                 ("basicuser", "Basic User"),
                 ("admin", "Admin")
             ]
+
+# Support Signature Upload Form
+class SignatureUploadForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['signature']

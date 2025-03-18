@@ -4,7 +4,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-from .forms import UserForm
+from .forms import UserForm, SignatureUploadForm
 from django.http import HttpResponseForbidden
 from functools import wraps
 from .models import CustomUser
@@ -122,3 +122,17 @@ def reactivate_user(request, user_id):
     else:
         messages.info(request, f'User {user.username} is already active.')
     return redirect('user_list')
+
+@login_required
+def upload_signature(request):
+    """Allows users to upload their signature."""
+    if request.method == "POST":
+        form = SignatureUploadForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Signature uploaded successfully!")
+            return redirect("dashboard")
+    else:
+        form = SignatureUploadForm(instance=request.user)
+
+    return render(request, "users/upload_signature.html", {"form": form})

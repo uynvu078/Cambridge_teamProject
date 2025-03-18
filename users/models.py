@@ -11,6 +11,7 @@ class CustomUser(AbstractUser):
     
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='basicuser')
     status = models.BooleanField(default=True)  # True = Active, False = Inactive
+    signature = models.ImageField(upload_to="signatures/", null=True, blank=True)
 
     def __str__(self):
         return self.username
