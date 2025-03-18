@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import user_list, user_create, user_update, user_delete
+from .views import user_list, user_create, user_update, user_delete, upload_signature
 from . import views
 
 urlpatterns = [
@@ -9,4 +9,6 @@ urlpatterns = [
     path('<int:pk>/delete/', user_delete, name="user_delete"),  # Delete user
     path('deactivate/<int:user_id>/', views.deactivate_user, name='deactivate_user'),
     path('reactivate/<int:user_id>/', views.reactivate_user, name='reactivate_user'),
+    
+    path('upload-signature/', upload_signature, name="upload_signature"), #signature route
 ]

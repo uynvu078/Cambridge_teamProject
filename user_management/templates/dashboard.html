@@ -11,5 +11,24 @@
 {% else %}
     <p class="text-center">You are a basic user. You can view your account details.</p>
 {% endif %}
+
+<!-- Signature Button -->
+<div class="text-center mt-4">
+    <a class="btn btn-success" href="{% url 'upload_signature' %}">Upload Your Signature</a>
+</div>
+
+<!-- message user hasn't uploaded a signature -->
+{% if not user.signature %}
+    <div class="alert alert-warning text-center mt-3">
+        <strong>Reminder:</strong> You haven't uploaded a signature yet. 
+        <a href="{% url 'upload_signature' %}" class="btn btn-sm btn-success">Upload Now</a>
+    </div>
+{% else %}
+    <div class="text-center mt-3">
+        <h4>Your Uploaded Signature:</h4>
+        <img src="{{ user.signature.url }}" alt="Your Signature" class="img-thumbnail" style="max-width: 300px;">
+    </div>
+{% endif %}
+
 {% endblock %}
 

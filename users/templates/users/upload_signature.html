@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-center">Upload Your Signature</h2>
+
+    <!-- Display Success Message -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="signature-upload-form">
+        <form method="post" enctype="multipart/form-data" class="form-group">
+            {% csrf_token %}
+            <label for="{{ form.signature.id_for_label }}">Upload Signature:</label>
+            {{ form.signature }}
+            
+            <button type="submit" class="btn btn-primary mt-3">Upload</button>
+        </form>
+
+        <!-- Show current signature if exists -->
+        {% if user.signature %}
+            <h3 class="mt-4">Current Signature:</h3>
+            <img src="{{ user.signature.url }}" alt="User Signature" class="img-thumbnail" style="max-width: 300px;">
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .container {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    input[type="file"] {
+        margin-top: 10px;
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        background-color: #0078D4;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #005A9E;
+    }
+
+    .img-thumbnail {
+        margin-top: 15px;
+        max-width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+</style>
+
+{% endblock %}
