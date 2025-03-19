@@ -12,6 +12,10 @@
     <p class="text-center">You are a basic user. You can view your account details.</p>
 {% endif %}
 
+<div class="text-center mt-4">
+    <a class="btn btn-info" href="{% url 'edit_profile' %}">Edit Profile</a>
+</div>
+
 <!-- Signature Button -->
 <div class="text-center mt-4">
     <a class="btn btn-success" href="{% url 'upload_signature' %}">Upload Your Signature</a>
