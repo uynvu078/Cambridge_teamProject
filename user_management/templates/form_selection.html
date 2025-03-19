@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Select a Form{% endblock %}
+{% block content %}
+<h2 class="text-center">Choose a Form to Fill Out</h2>
+<div class="text-center mt-4">
+    <!-- Option for Form A -->
+    <a class="btn btn-primary mx-2" href="{% static 'pdf_forms/form_a.pdf' %}" target="_blank">
+        Form A
+    </a>
+    <!-- Option for Form B -->
+    <a class="btn btn-secondary mx-2" href="{% static 'pdf_forms/form_b.pdf' %}" target="_blank">
+        Form B
+    </a>
+</div>
+<p class="text-center mt-3">
+    Click on a form to view or download it. (Make sure you have a PDF reader to fill out the form.)
+</p>
+{% endblock %}

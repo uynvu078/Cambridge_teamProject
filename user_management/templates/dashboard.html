@@ -17,6 +17,12 @@
     <a class="btn btn-success" href="{% url 'upload_signature' %}">Upload Your Signature</a>
 </div>
 
+<!-- Forms -->
+<div class="text-center mt-4">
+    <a class="btn btn-info" href="{% url 'form_selection' %}">Forms</a>
+</div>
+
+
 <!-- message user hasn't uploaded a signature -->
 {% if not user.signature %}
     <div class="alert alert-warning text-center mt-3">
