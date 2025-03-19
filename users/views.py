@@ -1,20 +1,21 @@
 from django.shortcuts import render, get_object_or_404, redirect
 
 # Create your views here.
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-from .forms import UserForm, SignatureUploadForm
+from .forms import UserForm, SignatureUploadForm, ProfileForm
 from django.http import HttpResponseForbidden
 from functools import wraps
-from .models import CustomUser
+from .models import CustomUser, Profile, SubmittedForm
 from django.core.paginator import Paginator
-from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import get_object_or_404, redirect
 from .pdf_utils import fill_pdf
 import os
 from django.conf import settings
 from django.http import FileResponse
+from django.core.files.base import ContentFile
+
 
 
 
@@ -147,6 +148,26 @@ def upload_signature(request):
 def form_selection(request):
     return render(request, 'form_selection.html')
 
+
+@login_required
+def edit_profile(request):
+    profile, created = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=profile, user=request.user)
+        if form.is_valid():
+            request.user.first_name = form.cleaned_data["first_name"]
+            request.user.last_name = form.cleaned_data["last_name"]
+            request.user.email = form.cleaned_data["email"]
+            request.user.save()
+            form.save()
+            return redirect("dashboard")
+    else:
+        form = ProfileForm(instance=profile, user=request.user)
+
+    return render(request, "users/edit_profile.html", {"form": form})
+
+
 @login_required
 def generate_filled_pdf(request, form_type):
     print("DEBUG: generate_filled_pdf() was called with form_type =", form_type)
@@ -162,17 +183,79 @@ def generate_filled_pdf(request, form_type):
 
     user = request.user
 
-    # Fixing missing user details
+    # Extract user details
     first_name = user.first_name if user.first_name else "Unknown"
     last_name = user.last_name if user.last_name else "Unknown"
-    phone = user.profile.phone_number if hasattr(user, "profile") and user.profile.phone_number else "N/A"
-    student_id = user.profile.student_id if hasattr(user, "profile") and user.profile.student_id else "N/A"
+    phone = getattr(user.profile, "phone_number", "N/A")
+    student_id = getattr(user.profile, "student_id", "N/A")
+    email = user.email
+
     signature_path = user.signature.path if hasattr(user, "signature") and user.signature else None
 
     user_data = {
         "first_name": first_name,
         "last_name": last_name,
-        "email": user.email,
+        "email": email,
+        "phone": phone,
+        "student_id": student_id,
+        "signature_path": signature_path,
+    }
+
+    print("DEBUG: User Data Sent to fill_pdf:", user_data)
+
+    # Generate filled PDF
+    filled_pdf_path = fill_pdf(form_paths[form_type], "output.pdf", user_data)
+
+    # Open and properly wrap the file as a Django File object
+    with open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb") as pdf_file:
+        pdf_content = pdf_file.read()  # Read the file content
+        django_file = ContentFile(pdf_content)  # Wrap it as a Django ContentFile
+
+        submitted_form = SubmittedForm.objects.create(
+            user=user,
+            form_type=form_type,
+        )
+        submitted_form.pdf_file.save(f"{student_id}_form.pdf", django_file)  # Save as Django FileField
+        submitted_form.save()
+
+    print("DEBUG: PDF stored in database:", submitted_form)
+
+    return FileResponse(open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb"), as_attachment=True, content_type="application/pdf")
+
+@login_required
+def submitted_forms_list(request):
+    submitted_forms = SubmittedForm.objects.all().order_by('-submitted_at')
+    return render(request, "approval/submitted_forms.html", {"submitted_forms": submitted_forms})
+
+
+
+@login_required
+def submit_filled_pdf(request, form_type):
+    print("DEBUG: submit_filled_pdf() was called with form_type =", form_type)
+
+    form_paths = {
+        "posthumous_degree": os.path.join(settings.BASE_DIR, "static/pdf_forms/form_a.pdf"),
+        "term_withdrawal": os.path.join(settings.BASE_DIR, "static/pdf_forms/form_b.pdf"),
+    }
+
+    if form_type not in form_paths:
+        print("DEBUG: Invalid form type selected:", form_type)
+        return HttpResponse("Invalid form selection.", status=400)
+
+    user = request.user
+
+    first_name = user.first_name if user.first_name else "Unknown"
+    last_name = user.last_name if user.last_name else "Unknown"
+    phone = getattr(user.profile, "phone_number", "N/A")
+    student_id = getattr(user.profile, "student_id", "N/A")
+    email = user.email
+
+    signature_path = user.signature.path if hasattr(user, "signature") and user.signature else None
+
+    user_data = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
         "phone": phone,
         "student_id": student_id,
         "signature_path": signature_path,
@@ -182,4 +265,30 @@ def generate_filled_pdf(request, form_type):
 
     filled_pdf_path = fill_pdf(form_paths[form_type], "output.pdf", user_data)
 
-    return FileResponse(open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb"), as_attachment=True, content_type="application/pdf")
+    with open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb") as pdf_file:
+        pdf_content = pdf_file.read() 
+        django_file = ContentFile(pdf_content)  
+
+        submitted_form = SubmittedForm.objects.create(
+            user=user,
+            form_type=form_type,
+        )
+        submitted_form.pdf_file.save(f"{student_id}_form.pdf", django_file)
+        submitted_form.save()
+
+    print("DEBUG: PDF stored in database:", submitted_form)
+
+    return redirect("submitted_forms")  
+
+
+@login_required
+def delete_submitted_form(request, form_id):
+    submitted_form = get_object_or_404(SubmittedForm, id=form_id, user=request.user)
+    
+    if submitted_form.pdf_file:
+        submitted_form.pdf_file.delete()
+
+    submitted_form.delete()
+    messages.success(request, "Form deleted successfully.")
+
+    return redirect("submitted_forms") 

@@ -3,17 +3,49 @@
 {% block title %}Select a Form{% endblock %}
 {% block content %}
 <h2 class="text-center">Choose a Form to Fill Out</h2>
+
+<!-- Form A -->
 <div class="text-center mt-4">
-    <!-- Option for Form A -->
-    <a class="btn btn-primary mx-2" href="{% static 'pdf_forms/form_a.pdf' %}" target="_blank">
-        Form A
-    </a>
-    <!-- Option for Form B -->
-    <a class="btn btn-secondary mx-2" href="{% static 'pdf_forms/form_b.pdf' %}" target="_blank">
-        Form B
+    <a class="btn btn-primary mx-2" href="{% url 'generate_filled_pdf' 'posthumous_degree' %}">
+        Fill & Download Posthumous Degree Form
     </a>
 </div>
+
+<p class="text-center mt-2">
+    <a href="{% static 'pdf_forms/form_a.pdf' %}" target="_blank" class="btn btn-outline-primary">
+        View Blank Form A
+    </a>
+</p>
+
+<!-- Submit Form A -->
+<form method="post" action="{% url 'submit_filled_pdf' 'posthumous_degree' %}" class="text-center mt-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">Submit Posthumous Degree Form</button>
+</form>
+
+<hr>
+
+<!-- Form B -->
+<div class="text-center mt-4">
+    <a class="btn btn-secondary mx-2" href="{% url 'generate_filled_pdf' 'term_withdrawal' %}">
+        Fill & Download Term Withdrawal Form
+    </a>
+</div>
+
+<p class="text-center mt-2">
+    <a href="{% static 'pdf_forms/form_b.pdf' %}" target="_blank" class="btn btn-outline-secondary">
+        View Blank Form B
+    </a>
+</p>
+
+<!-- Submit Form B -->
+<form method="post" action="{% url 'submit_filled_pdf' 'term_withdrawal' %}" class="text-center mt-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">Submit Term Withdrawal Form</button>
+</form>
+
 <p class="text-center mt-3">
-    Click on a form to view or download it. (Make sure you have a PDF reader to fill out the form.)
+    Click on a form to fill it out and download. You can also view a blank version before filling.  
+    Once done, **submit your filled form** for approval.
 </p>
 {% endblock %}
