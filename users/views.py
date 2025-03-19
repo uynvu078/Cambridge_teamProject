@@ -136,3 +136,8 @@ def upload_signature(request):
         form = SignatureUploadForm(instance=request.user)
 
     return render(request, "users/upload_signature.html", {"form": form})
+
+
+@login_required
+def form_selection(request):
+    return render(request, 'form_selection.html')

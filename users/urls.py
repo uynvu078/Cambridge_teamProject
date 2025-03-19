@@ -11,4 +11,5 @@ urlpatterns = [
     path('reactivate/<int:user_id>/', views.reactivate_user, name='reactivate_user'),
     
     path('upload-signature/', upload_signature, name="upload_signature"), #signature route
+    path('forms/', views.form_selection, name='form_selection')
 ]
