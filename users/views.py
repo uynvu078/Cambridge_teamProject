@@ -11,6 +11,11 @@ from .models import CustomUser
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import get_object_or_404, redirect
+from .pdf_utils import fill_pdf
+import os
+from django.conf import settings
+from django.http import FileResponse
+
 
 
 def admin_required(view_func):
@@ -141,3 +146,40 @@ def upload_signature(request):
 @login_required
 def form_selection(request):
     return render(request, 'form_selection.html')
+
+@login_required
+def generate_filled_pdf(request, form_type):
+    print("DEBUG: generate_filled_pdf() was called with form_type =", form_type)
+
+    form_paths = {
+        "posthumous_degree": os.path.join(settings.BASE_DIR, "static/pdf_forms/form_a.pdf"),
+        "term_withdrawal": os.path.join(settings.BASE_DIR, "static/pdf_forms/form_b.pdf"),
+    }
+
+    if form_type not in form_paths:
+        print("DEBUG: Invalid form type selected:", form_type)
+        return HttpResponse("Invalid form selection.", status=400)
+
+    user = request.user
+
+    # Fixing missing user details
+    first_name = user.first_name if user.first_name else "Unknown"
+    last_name = user.last_name if user.last_name else "Unknown"
+    phone = user.profile.phone_number if hasattr(user, "profile") and user.profile.phone_number else "N/A"
+    student_id = user.profile.student_id if hasattr(user, "profile") and user.profile.student_id else "N/A"
+    signature_path = user.signature.path if hasattr(user, "signature") and user.signature else None
+
+    user_data = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": user.email,
+        "phone": phone,
+        "student_id": student_id,
+        "signature_path": signature_path,
+    }
+
+    print("DEBUG: User Data Sent to fill_pdf:", user_data)
+
+    filled_pdf_path = fill_pdf(form_paths[form_type], "output.pdf", user_data)
+
+    return FileResponse(open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb"), as_attachment=True, content_type="application/pdf")
