@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Update Form Status{% endblock %}
+
+{% block content %}
+<h2>Update Form Status</h2>
+<p>Form Type: {{ form.form_type }}</p>
+<p>Submitted by: {{ form.user.username }}</p>
+<p>Current Status: <strong>{{ form.get_status_display }}</strong></p>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <label for="status">Change Status:</label>
+    <select name="status" id="status" class="form-control">
+        <option value="draft" {% if form.status == "draft" %}selected{% endif %}>Draft</option>
+        <option value="pending" {% if form.status == "pending" %}selected{% endif %}>Pending Review</option>
+        <option value="returned" {% if form.status == "returned" %}selected{% endif %}>Returned for Changes</option>
+        <option value="approved" {% if form.status == "approved" %}selected{% endif %}>Approved</option>
+    </select>
+
+    <label for="comments">Comments (Optional):</label>
+    <textarea name="comments" id="comments" class="form-control">{{ form.comments }}</textarea>
+
+    <label for="approver_signature">Approver Signature (only on approval):</label>
+    <input type="file" name="approver_signature" accept="image/*" class="form-control">
+
+    <button type="submit" class="btn btn-primary mt-3">Update Status</button>
+</form>
+
+
+<a href="{% url 'submitted_forms' %}" class="btn btn-secondary mt-3">Back to Submitted Forms</a>
+{% endblock %}

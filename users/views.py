@@ -9,12 +9,17 @@ from django.http import HttpResponseForbidden
 from functools import wraps
 from .models import CustomUser, Profile, SubmittedForm
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from .pdf_utils import fill_pdf
-import os
 from django.conf import settings
 from django.http import FileResponse
 from django.core.files.base import ContentFile
+from django.utils import timezone
+import os
+from users.models import SubmittedForm, SubmittedFormVersion
+from users.pdf_utils import fill_pdf
+from datetime import datetime
+
 
 
 
@@ -35,8 +40,8 @@ User = get_user_model()
 def user_list(request):
     search_query = request.GET.get("search", "")
     role_filter = request.GET.get("role", "")
-    sort_by = request.GET.get("sort_by", "username")  # Default sorting by username
-    order = request.GET.get("order", "asc")  # Default order is ascending
+    sort_by = request.GET.get("sort_by", "username")  
+    order = request.GET.get("order", "asc")
 
     users = CustomUser.objects.all()
 
@@ -51,7 +56,7 @@ def user_list(request):
     else:
         users = users.order_by(sort_by)
         
-    paginator = Paginator(users, 10)  # Show 10 users per page
+    paginator = Paginator(users, 10)
     page_number = request.GET.get("page")
     users = paginator.get_page(page_number)
 
@@ -203,28 +208,46 @@ def generate_filled_pdf(request, form_type):
 
     print("DEBUG: User Data Sent to fill_pdf:", user_data)
 
+    # unique filename based on username, form type, and timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique_filename = f"{user.username}_{form_type}_{timestamp}.pdf"
+
     # Generate filled PDF
-    filled_pdf_path = fill_pdf(form_paths[form_type], "output.pdf", user_data)
+    filled_pdf_path = fill_pdf(form_paths[form_type], unique_filename, user_data)
 
     # Open and properly wrap the file as a Django File object
     with open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb") as pdf_file:
-        pdf_content = pdf_file.read()  # Read the file content
-        django_file = ContentFile(pdf_content)  # Wrap it as a Django ContentFile
+        pdf_content = pdf_file.read()
+        django_file = ContentFile(pdf_content)
 
-        submitted_form = SubmittedForm.objects.create(
-            user=user,
-            form_type=form_type,
-        )
-        submitted_form.pdf_file.save(f"{student_id}_form.pdf", django_file)  # Save as Django FileField
-        submitted_form.save()
+        submitted_form = SubmittedForm.objects.filter(user=user, form_type=form_type).order_by('-submitted_at').first()
+
+        if submitted_form:
+            submitted_form.pdf_file.save(unique_filename, django_file)
+            submitted_form.save()
+        else:
+            print("WARNING: No existing form entry found!")
 
     print("DEBUG: PDF stored in database:", submitted_form)
 
-    return FileResponse(open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb"), as_attachment=True, content_type="application/pdf")
+    return FileResponse(
+        open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb"),
+        as_attachment=True,
+        content_type="application/pdf"
+    )
 
+
+# @login_required
+# def submitted_forms_list(request):
+#     submitted_forms = SubmittedForm.objects.all().order_by('-submitted_at')
+#     return render(request, "approval/submitted_forms.html", {"submitted_forms": submitted_forms})
 @login_required
 def submitted_forms_list(request):
-    submitted_forms = SubmittedForm.objects.all().order_by('-submitted_at')
+    if request.user.is_superuser or request.user.role == "admin":
+        submitted_forms = SubmittedForm.objects.all()  # Admin sees all
+    else:
+        submitted_forms = SubmittedForm.objects.filter(user=request.user)  # Basic users see only their own
+
     return render(request, "approval/submitted_forms.html", {"submitted_forms": submitted_forms})
 
 
@@ -233,62 +256,183 @@ def submitted_forms_list(request):
 def submit_filled_pdf(request, form_type):
     print("DEBUG: submit_filled_pdf() was called with form_type =", form_type)
 
+    user = request.user
+
+    # Check if the form already exists for the user
+    existing_form = SubmittedForm.objects.filter(user=user, form_type=form_type).first()
+    if existing_form:
+        messages.warning(request, "You have already submitted this form. It will not be submitted again.")
+        return redirect("submitted_forms")  
+
+    # Process normally if the form doesn't exist
     form_paths = {
         "posthumous_degree": os.path.join(settings.BASE_DIR, "static/pdf_forms/form_a.pdf"),
         "term_withdrawal": os.path.join(settings.BASE_DIR, "static/pdf_forms/form_b.pdf"),
     }
 
     if form_type not in form_paths:
-        print("DEBUG: Invalid form type selected:", form_type)
-        return HttpResponse("Invalid form selection.", status=400)
-
-    user = request.user
-
-    first_name = user.first_name if user.first_name else "Unknown"
-    last_name = user.last_name if user.last_name else "Unknown"
-    phone = getattr(user.profile, "phone_number", "N/A")
-    student_id = getattr(user.profile, "student_id", "N/A")
-    email = user.email
-
-    signature_path = user.signature.path if hasattr(user, "signature") and user.signature else None
+        messages.error(request, "Invalid form selection.")
+        return redirect("submitted_forms")
 
     user_data = {
-        "first_name": first_name,
-        "last_name": last_name,
-        "email": email,
-        "phone": phone,
-        "student_id": student_id,
-        "signature_path": signature_path,
+        "first_name": user.first_name or "Unknown",
+        "last_name": user.last_name or "Unknown",
+        "email": user.email,
+        "phone": getattr(user.profile, "phone_number", "N/A"),
+        "student_id": getattr(user.profile, "student_id", "N/A"),
+        "signature_path": user.signature.path if hasattr(user, "signature") and user.signature else None,
     }
-
-    print("DEBUG: User Data Sent to fill_pdf:", user_data)
 
     filled_pdf_path = fill_pdf(form_paths[form_type], "output.pdf", user_data)
 
     with open(os.path.join(settings.MEDIA_ROOT, filled_pdf_path), "rb") as pdf_file:
-        pdf_content = pdf_file.read() 
-        django_file = ContentFile(pdf_content)  
+        pdf_content = pdf_file.read()
+        django_file = ContentFile(pdf_content)
 
         submitted_form = SubmittedForm.objects.create(
             user=user,
             form_type=form_type,
         )
-        submitted_form.pdf_file.save(f"{student_id}_form.pdf", django_file)
+        submitted_form.pdf_file.save(f"{user.student_id}_form.pdf", django_file)
         submitted_form.save()
 
-    print("DEBUG: PDF stored in database:", submitted_form)
+    messages.success(request, "Form submitted successfully!")
+    return redirect("submitted_forms")
 
-    return redirect("submitted_forms")  
 
+def is_admin(user):
+    return user.is_authenticated and user.role == 'admin'
 
 @login_required
 def delete_submitted_form(request, form_id):
-    submitted_form = get_object_or_404(SubmittedForm, id=form_id, user=request.user)
+    if request.method == "POST":
+        if request.user.is_superuser:  
+            submitted_form = get_object_or_404(SubmittedForm, id=form_id)
+        else:  
+            submitted_form = get_object_or_404(SubmittedForm, id=form_id, user=request.user)
+
+        if submitted_form.pdf_file:
+            submitted_form.pdf_file.delete()
+
+        submitted_form.delete()
+        messages.success(request, "Form deleted successfully.")
     
-    if submitted_form.pdf_file:
-        submitted_form.pdf_file.delete()
+    return redirect("submitted_forms")
 
-    submitted_form.delete()
-    messages.success(request, "Form deleted successfully.")
 
-    return redirect("submitted_forms") 
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def form_status(request, form_id):
+    form = get_object_or_404(SubmittedForm, id=form_id)
+
+    if request.method == "POST":
+        new_status = request.POST.get("status")
+        comments = request.POST.get("comments", "")
+        approver_signature = request.FILES.get("approver_signature")  # Admin signature
+
+        if new_status in ["draft", "pending", "returned", "approved"]:
+            form.status = new_status
+            form.comments = comments
+            form.save()
+
+            # Ensure valid form type mapping to PDFs
+            form_templates = {
+                "posthumous_degree": "posthumous_degree.pdf",
+                "term_withdrawal": "term_withdrawal.pdf",
+            }
+
+            if form.form_type in form_templates:
+                template_pdf_path = os.path.join(settings.BASE_DIR, "static/pdf_forms", form_templates[form.form_type])
+
+                if os.path.exists(template_pdf_path):
+                    user_data = {
+                        "first_name": form.user.first_name,
+                        "last_name": form.user.last_name,
+                        "email": form.user.email,
+                        "student_id": getattr(form.user.profile, "student_id", "N/A"),
+                        "status": form.get_status_display(),
+                    }
+
+                    # Generate filled PDF file
+                    output_filename = f"{form.user.username}_{form.form_type}_v{form.versions.count()+1}.pdf"
+                    filled_pdf_path = fill_pdf(template_pdf_path, output_filename, user_data)
+
+                    # Save new PDF version
+                    if filled_pdf_path:
+                        with open(filled_pdf_path, "rb") as pdf_file:
+                            django_file = ContentFile(pdf_file.read())
+                            submitted_version = SubmittedFormVersion.objects.create(
+                                submitted_form=form,
+                                pdf_file=django_file,
+                                version_number=form.versions.count() + 1,
+                            )
+
+                            if new_status == "approved" and approver_signature:
+                                submitted_version.approver_signature = approver_signature
+                                submitted_version.save()
+
+                        messages.success(request, f"Form status updated to {new_status} and new version saved.")
+                    else:
+                        messages.warning(request, "Generated PDF file not found. Status updated, but file was not saved.")
+                else:
+                    messages.error(request, f"Template file for {form.form_type} is missing.")
+            else:
+                messages.error(request, "Invalid form type.")
+
+        return redirect("submitted_forms")
+
+    return render(request, "approval/form_status.html", {"form": form})
+
+@login_required
+def view_submitted_form(request, form_id):
+    """Update status to 'Pending' when viewing the submitted form and serve the PDF."""
+    submitted_form = get_object_or_404(SubmittedForm, id=form_id)
+
+    # Check if form has an associated PDF file
+    if not submitted_form.pdf_file:
+        messages.error(request, "No PDF file found for this submission.")
+        return redirect("submitted_forms")
+
+    if submitted_form.status == "draft":
+        submitted_form.status = "pending"
+        submitted_form.save()
+
+    return FileResponse(submitted_form.pdf_file.open("rb"), content_type="application/pdf")
+
+@login_required
+def upload_filled_pdf(request, form_type):
+    """Handles the uploaded user-filled PDF form submission and updates existing submissions."""
+    user = request.user
+    valid_forms = {
+        "posthumous_degree": "Posthumous Degree",
+        "term_withdrawal": "Term Withdrawal",
+    }
+
+    if form_type not in valid_forms:
+        messages.error(request, "Invalid form selection.")
+        return redirect("form_selection")
+
+    if request.method == "POST" and request.FILES.get("filled_pdf"):
+        uploaded_file = request.FILES["filled_pdf"]
+        timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+        filename = f"{user.username}_{form_type}_{timestamp}.pdf"
+
+        # Check if the user already submitted this form type
+        form_instance, created = SubmittedForm.objects.get_or_create(
+            user=user, form_type=form_type,
+            defaults={"status": "draft"}  # If new, default to draft
+        )
+
+        # If updating, ensure old file is replaced
+        form_instance.pdf_file.delete(save=False)  # Remove old file if it exists
+        form_instance.pdf_file = uploaded_file  # Assign new uploaded file
+        form_instance.pdf_file.name = f"submitted_forms/{filename}"  # Ensure proper storage path
+        form_instance.status = "pending"  # Move form to pending for review
+        form_instance.submitted_at = timezone.now()  # Update submission time
+        form_instance.save()
+
+        messages.success(request, "Your form has been updated successfully.")
+        return redirect("submitted_forms")
+
+    messages.error(request, "No file uploaded. Please select a file.")
+    return redirect("form_selection")
