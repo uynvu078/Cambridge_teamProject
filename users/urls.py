@@ -1,8 +1,10 @@
 from django.urls import path
 from .views import user_list, user_create, user_update, user_delete
-from .views import upload_signature, edit_profile, submitted_forms_list
-from .views import generate_filled_pdf, submit_filled_pdf, delete_submitted_form
+from .views import upload_signature, edit_profile, submitted_forms_list, form_status
+from .views import generate_filled_pdf, submit_filled_pdf, delete_submitted_form, view_submitted_form
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', user_list, name="user_list"),  # List all users
@@ -18,8 +20,17 @@ urlpatterns = [
     path("submitted-forms/", submitted_forms_list, name="submitted_forms"),
     path("submit-filled-pdf/<str:form_type>/", submit_filled_pdf, name="submit_filled_pdf"),
     path("delete-submitted-form/<int:form_id>/", delete_submitted_form, name="delete_submitted_form"),
+    path('view-submitted-form/<int:form_id>/', view_submitted_form, name='view_submitted_form'),
+    
+    path("update-form-status/<int:form_id>/", form_status, name="form_status"),
+    path("upload-filled-pdf/<str:form_type>/", views.upload_filled_pdf, name="upload_filled_pdf"),
+
+
 ]
 
 urlpatterns += [
     path('generate-form/<str:form_type>/', generate_filled_pdf, name='generate_filled_pdf'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
