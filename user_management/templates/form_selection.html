@@ -62,12 +62,16 @@
         </div>
     </div>
 
-    <!-- View Submitted Forms Button -->
-    <div class="mt-4">
+    <!-- View Submitted Forms and Back to Dashboard Buttons -->
+    <div class="mt-4 d-flex flex-column align-items-center">
         <a href="{% url 'submitted_forms' %}" class="btn btn-warning px-4 py-2 fw-bold">
             <i class="fas fa-folder-open"></i> View Submitted Forms
         </a>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary px-4 py-2 fw-bold mt-2">
+            ⬅️ Back to Dashboard
+        </a>
     </div>
+
 </div>
 
 {% endblock %}

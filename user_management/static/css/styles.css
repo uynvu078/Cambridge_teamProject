@@ -64,105 +64,11 @@ h2 {
     color: #333;
 }
 
-/* Search & Filter Form */
-.search-filter-form {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.search-input, .filter-dropdown {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.search-input {
-    width: 250px;
-}
-
-.filter-dropdown {
-    width: 180px;
-}
-
-.search-btn {
-    background-color: #0078D4;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.search-btn:hover {
-    background-color: #005A9E;
-}
-
-/* Add User Button */
-.add-user-btn {
-    display: inline-block;
-    margin-bottom: 15px;
-    padding: 10px 15px;
-    background-color: #28a745;
-    color: white;
+.user-table th a:link,
+.user-table th a:visited,
+.user-table th a:active {
+    color: white !important;
     text-decoration: none;
-    border-radius: 5px;
-}
-
-.add-user-btn:hover {
-    background-color: #218838;
-}
-
-/* User Table */
-.user-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.user-table th, .user-table td {
-    padding: 12px;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-}
-
-.user-table th {
-    background-color: #0078D4;
-    color: white;
-}
-
-.user-table tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-/* Action Buttons */
-.actions a {
-    text-decoration: none;
-    font-weight: bold;
-    padding: 6px 10px;
-    border-radius: 5px;
-    font-size: 14px;
-}
-
-.edit-btn {
-    background-color: #28a745;
-    color: white;
-}
-
-.edit-btn:hover {
-    background-color: #218838;
-}
-
-.delete-btn {
-    background-color: #dc3545;
-    color: white;
-}
-
-.delete-btn:hover {
-    background-color: #c82333;
 }
 
 /* No Users Message */
@@ -235,7 +141,6 @@ h2 {
     width: 100%;
     z-index: 1050;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    background-color: red !important;
 }
 .navbar .btn + .btn {
     margin-left: 10px;

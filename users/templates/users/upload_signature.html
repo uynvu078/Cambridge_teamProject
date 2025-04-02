@@ -5,6 +5,13 @@
     <div class="container">
         <h2 class="text-center mb-4">Upload Your Signature</h2>
 
+        <!-- Back to Dashboard Button -->
+        <div class="mb-4 text-start">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ⬅️ Back to Dashboard
+            </a>
+        </div>
+
         <!-- Display Success Message -->
         {% if messages %}
             {% for message in messages %}
