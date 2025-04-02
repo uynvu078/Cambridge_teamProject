@@ -1,27 +1,22 @@
-from django.shortcuts import render, get_object_or_404, redirect
+import os
 
-# Create your views here.
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-from .forms import UserForm, SignatureUploadForm, ProfileForm
-from django.http import HttpResponseForbidden
-from functools import wraps
-from .models import CustomUser, Profile, SubmittedForm
-from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, redirect, render
-from .pdf_utils import fill_pdf
+from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.http import FileResponse
 from django.core.files.base import ContentFile
+from django.core.paginator import Paginator
 from django.utils import timezone
-import os
+from django.http import HttpResponseForbidden
 from users.models import SubmittedForm, SubmittedFormVersion
 from users.pdf_utils import fill_pdf
 from datetime import datetime
-
-
-
+from functools import wraps
+from .forms import UserForm, SignatureUploadForm, ProfileForm
+from .models import CustomUser, Profile, SubmittedForm
+from .pdf_utils import fill_pdf
 
 
 def admin_required(view_func):
@@ -237,10 +232,6 @@ def generate_filled_pdf(request, form_type):
     )
 
 
-# @login_required
-# def submitted_forms_list(request):
-#     submitted_forms = SubmittedForm.objects.all().order_by('-submitted_at')
-#     return render(request, "approval/submitted_forms.html", {"submitted_forms": submitted_forms})
 @login_required
 def submitted_forms_list(request):
     if request.user.is_superuser or request.user.role == "admin":

@@ -2,7 +2,7 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 
-<div class="container mt-5 text-center">
+<div class="mt-5 text-center">
     <h2 class="mb-4">Welcome, {{ user.username }}!</h2>
 
     {% if user.is_superuser %}
@@ -12,7 +12,6 @@
         <p class="text-secondary">You are a basic user. You can view and manage your account details.</p>
     {% endif %}
 
-    <!-- Organized Buttons Section -->
     <div class="d-flex flex-column align-items-center mt-3">
         <div class="d-flex flex-wrap justify-content-center gap-4">
             <a class="btn btn-outline-primary px-5 py-2" href="{% url 'edit_profile' %}">Edit Profile</a>
@@ -24,7 +23,6 @@
         </div>
     </div>
 
-    <!-- Signature Upload Reminder -->
     {% if not user.signature %}
         <div class="alert alert-warning text-center mt-5 p-3">
             <strong>Reminder:</strong> You haven't uploaded a signature yet. 
