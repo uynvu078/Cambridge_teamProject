@@ -1,6 +1,16 @@
 # User Management System - Team Cambridge
 Welcome to our project repository!
 
+
+## How to Access Web Application with Docker
+1. Install Docker and Docker Compose
+2. Clone the repository at https://uynvu078.github.io/Cambridge_teamProject/
+3. In cmd prompt change directories to the clone
+4. Enter "cp .env.example .env" (Linux/macOS) or "copy .env.example .env" (Windows)
+5. Then enter "docker-compose build" and then "docker-compose up"
+4. Once running go to the url: http://localhost:8000/
+
+
 ## Overview
 A web-based **User Management System** that leverages **Office 365 authentication** and provides **role-based access control (RBAC)**, user management, and security features.
 
