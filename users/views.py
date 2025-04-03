@@ -10,7 +10,7 @@ from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.http import HttpResponseForbidden
-from users.models import SubmittedForm, SubmittedFormVersion
+from users.models import SubmittedForm, SubmittedFormVersion, FilledForm
 from users.pdf_utils import fill_pdf
 from datetime import datetime
 from functools import wraps
@@ -128,6 +128,9 @@ def reactivate_user(request, user_id):
     else:
         messages.info(request, f'User {user.username} is already active.')
     return redirect('user_list')
+
+# -----------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------
 
 @login_required
 def upload_signature(request):
@@ -390,9 +393,55 @@ def view_submitted_form(request, form_id):
 
     return FileResponse(submitted_form.pdf_file.open("rb"), content_type="application/pdf")
 
+# @login_required
+# def upload_filled_pdf(request, form_type):
+#     """Handles the uploaded user-filled PDF form submission and updates existing submissions."""
+#     user = request.user
+#     valid_forms = {
+#         "posthumous_degree": "Posthumous Degree",
+#         "term_withdrawal": "Term Withdrawal",
+#     }
+
+#     if form_type not in valid_forms:
+#         messages.error(request, "Invalid form selection.")
+#         return redirect("form_selection")
+
+#     if request.method == "POST" and request.FILES.get("filled_pdf"):
+#         uploaded_file = request.FILES["filled_pdf"]
+#         timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+#         filename = f"{user.username}_{form_type}_{timestamp}.pdf"
+
+#         # --- Save to SubmittedForm (latest version)
+#         form_instance, created = SubmittedForm.objects.get_or_create(
+#             user=user, form_type=form_type,
+#             defaults={"status": "draft"}
+#         )
+
+#         # If updating, ensure old file is replaced
+#         form_instance.pdf_file.delete(save=False)
+#         form_instance.pdf_file = uploaded_file
+#         form_instance.pdf_file.name = f"submitted_forms/{filename}"
+#         form_instance.status = "pending"
+#         form_instance.submitted_at = timezone.now()
+#         form_instance.save()
+        
+#         # Save to FilledForm (version history)
+#         version_count = FilledForm.objects.filter(user=user, form_name=form_type).count()
+#         FilledForm.objects.create(
+#             user=user,
+#             form_name=form_type,
+#             filled_pdf=uploaded_file,
+#             version=version_count + 1,
+#         )
+
+#         messages.success(request, "Your form has been submitted and version saved.")
+#         return redirect("submitted_forms")
+
+#     messages.error(request, "No file uploaded. Please select a file.")
+#     return redirect("form_selection")
+
 @login_required
 def upload_filled_pdf(request, form_type):
-    """Handles the uploaded user-filled PDF form submission and updates existing submissions."""
     user = request.user
     valid_forms = {
         "posthumous_degree": "Posthumous Degree",
@@ -407,23 +456,40 @@ def upload_filled_pdf(request, form_type):
         uploaded_file = request.FILES["filled_pdf"]
         timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
         filename = f"{user.username}_{form_type}_{timestamp}.pdf"
+        file_path = f"submitted_forms/{filename}"
 
-        # Check if the user already submitted this form type
-        form_instance, created = SubmittedForm.objects.get_or_create(
+        # Save to SubmittedForm
+        form_instance, _ = SubmittedForm.objects.get_or_create(
             user=user, form_type=form_type,
-            defaults={"status": "draft"}  # If new, default to draft
+            defaults={"status": "draft"}
         )
-
-        # If updating, ensure old file is replaced
-        form_instance.pdf_file.delete(save=False)  # Remove old file if it exists
-        form_instance.pdf_file = uploaded_file  # Assign new uploaded file
-        form_instance.pdf_file.name = f"submitted_forms/{filename}"  # Ensure proper storage path
-        form_instance.status = "pending"  # Move form to pending for review
-        form_instance.submitted_at = timezone.now()  # Update submission time
+        form_instance.pdf_file.delete(save=False)
+        form_instance.pdf_file.save(file_path, uploaded_file)
+        form_instance.status = "pending"
+        form_instance.submitted_at = timezone.now()
         form_instance.save()
 
-        messages.success(request, "Your form has been updated successfully.")
+        # Re-open the saved file for SubmittedFormVersion
+        saved_file_path = form_instance.pdf_file.path
+        with open(saved_file_path, "rb") as f:
+            version_number = SubmittedFormVersion.objects.filter(submitted_form=form_instance).count() + 1
+            SubmittedFormVersion.objects.create(
+                submitted_form=form_instance,
+                pdf_file=ContentFile(f.read(), name=filename),
+                version_number=version_number
+            )
+
+        messages.success(request, "Your form has been submitted and version saved.")
         return redirect("submitted_forms")
 
     messages.error(request, "No file uploaded. Please select a file.")
     return redirect("form_selection")
+
+@login_required
+def view_form_version(request, version_id):
+    version = get_object_or_404(SubmittedFormVersion, id=version_id)
+
+    if request.user != version.submitted_form.user and not request.user.is_superuser and request.user.role != "admin":
+        return HttpResponseForbidden("You do not have permission to view this file.")
+
+    return FileResponse(version.pdf_file.open("rb"), content_type="application/pdf")

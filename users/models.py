@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
@@ -61,3 +62,14 @@ class SubmittedFormVersion(models.Model):
 
     def __str__(self):
         return f"Version {self.version_number} of {self.submitted_form.form_type}"
+
+User = get_user_model()
+class FilledForm(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    form_name = models.CharField(max_length=100)
+    filled_pdf = models.FileField(upload_to='filled_forms/')
+    version = models.PositiveIntegerField(default=1)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.form_name} (v{self.version})"

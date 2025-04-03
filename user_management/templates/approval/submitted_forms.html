@@ -47,14 +47,25 @@
 
                     <!-- Version History -->
                     <td>
-                        {% for version in form.versions.all %}
-                            <a href="{{ version.pdf_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                v{{ version.version_number }}
-                            </a>
-                        {% empty %}
-                            <span class="text-muted">No Versions</span>
-                        {% endfor %}
-                    </td>
+                        {% if form.versions.exists %}
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    {{ form.versions.count }} Versions
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {% for version in form.versions.all %}
+                                    <li>
+                                        <a class="dropdown-item" href="{{ version.pdf_file.url }}" target="_blank">
+                                            View Version {{ version.version_number }}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% else %}
+                            No Versions
+                        {% endif %}
+                    </td>  
 
                     <td class="d-flex gap-2 justify-content-center">
                         <!-- Update Status (Admins Only) -->

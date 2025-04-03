@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import user_list, user_create, user_update, user_delete
 from .views import upload_signature, edit_profile, submitted_forms_list, form_status
-from .views import generate_filled_pdf, submit_filled_pdf, delete_submitted_form, view_submitted_form
+from .views import generate_filled_pdf, submit_filled_pdf, delete_submitted_form
+from .views import view_submitted_form , view_form_version
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -24,7 +25,7 @@ urlpatterns = [
     
     path("update-form-status/<int:form_id>/", form_status, name="form_status"),
     path("upload-filled-pdf/<str:form_type>/", views.upload_filled_pdf, name="upload_filled_pdf"),
-
+    path('form-version/<int:version_id>/', view_form_version, name='view_form_version'),
 
 ]
 
