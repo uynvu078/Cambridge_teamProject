@@ -20,6 +20,9 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://admin:securepassword@db:5432/user_management
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_EMAIL: admin@example.com
+      DJANGO_SUPERUSER_PASSWORD: adminpassword
     command: >
       sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 

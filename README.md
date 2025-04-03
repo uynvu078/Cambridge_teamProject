@@ -8,7 +8,9 @@ Welcome to our project repository!
 3. In cmd prompt change directories to the clone
 4. Enter "cp .env.example .env" (Linux/macOS) or "copy .env.example .env" (Windows)
 5. Then enter "docker-compose build" and then "docker-compose up"
-4. Once running go to the url: http://localhost:8000/
+6. Once running go to the url: http://localhost:8000/
+7. Want access to a basic account, create a new user
+8. Want access to an admin account- Username: admin   Password: adminpassword
 
 
 ## Overview
