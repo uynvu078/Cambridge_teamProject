@@ -26,6 +26,7 @@ urlpatterns = [
     path("update-form-status/<int:form_id>/", form_status, name="form_status"),
     path("upload-filled-pdf/<str:form_type>/", views.upload_filled_pdf, name="upload_filled_pdf"),
     path('form-version/<int:version_id>/', view_form_version, name='view_form_version'),
+    path('generate-latex-form/<str:form_type>/', views.generate_latex_form, name='generate_latex_form'),
 
 ]
 

@@ -57,7 +57,7 @@ def fill_pdf(input_pdf_path, output_pdf_path, user_data):
                 page.insert_text((x, y), value, fontsize=font_size, fontname="helv", color=(0, 0, 0))
                 break  # Stop searching once the first match is found
 
-    # ✅ Embed signature correctly
+    # Embed signature correctly
     if user_data.get("signature_path"):
         signature_path = user_data["signature_path"]
         try:
