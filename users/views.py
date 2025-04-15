@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model
@@ -17,8 +18,9 @@ from functools import wraps
 from .forms import UserForm, SignatureUploadForm, ProfileForm
 from .models import CustomUser, Profile, SubmittedForm
 from .pdf_utils import fill_pdf
+from users.latex_utils import fill_latex_template
 
-
+# Admin views
 def admin_required(view_func):
     """Decorator to restrict accesss to admin users only."""
     @wraps(view_func)
@@ -29,8 +31,8 @@ def admin_required(view_func):
     return _wrapped_view
 
 
+# User List Views and Filter
 User = get_user_model()
-
 @login_required
 def user_list(request):
     search_query = request.GET.get("search", "")
@@ -63,6 +65,7 @@ def user_list(request):
         "order": order
     })
 
+# Creating User
 @login_required
 @admin_required
 def user_create(request):
@@ -80,12 +83,13 @@ def user_create(request):
         form = UserForm(user=request.user)  
     return render(request, "users/user_form.html", {"form": form})
 
+# Updating User
 @login_required
 @admin_required
 def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
     if request.method == "POST":
-        form = UserForm(request.POST, instance=user, user=request.user) #Pass user to forms
+        form = UserForm(request.POST, instance=user, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, "User updated successfully!")
@@ -94,6 +98,7 @@ def user_update(request, pk):
         form = UserForm(instance=user)
     return render(request, 'users/user_form.html', {'form': form})
 
+# Deleting User
 @login_required
 @admin_required
 def user_delete(request, pk):
@@ -107,6 +112,7 @@ def user_delete(request, pk):
 def is_admin(user):
     return user.is_authenticated and user.role == 'admin'
 
+# Deactivate User
 @user_passes_test(is_admin)
 def deactivate_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
@@ -118,6 +124,7 @@ def deactivate_user(request, user_id):
         messages.info(request, f'User {user.username} is already deactivated.')
     return redirect('user_list')
 
+# Reactivate User
 @user_passes_test(is_admin)
 def reactivate_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
@@ -132,6 +139,7 @@ def reactivate_user(request, user_id):
 # -----------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------
 
+# Upload Signature
 @login_required
 def upload_signature(request):
     """Allows users to upload their signature."""
@@ -147,11 +155,12 @@ def upload_signature(request):
     return render(request, "users/upload_signature.html", {"form": form})
 
 
+# Selecting Form
 @login_required
 def form_selection(request):
     return render(request, 'form_selection.html')
 
-
+# Updating information for each user
 @login_required
 def edit_profile(request):
     profile, created = Profile.objects.get_or_create(user=request.user)
@@ -170,7 +179,7 @@ def edit_profile(request):
 
     return render(request, "users/edit_profile.html", {"form": form})
 
-
+# Filled the pdf
 @login_required
 def generate_filled_pdf(request, form_type):
     print("DEBUG: generate_filled_pdf() was called with form_type =", form_type)
@@ -234,7 +243,7 @@ def generate_filled_pdf(request, form_type):
         content_type="application/pdf"
     )
 
-
+# Admin can access all submitted forms
 @login_required
 def submitted_forms_list(request):
     if request.user.is_superuser or request.user.role == "admin":
@@ -245,11 +254,9 @@ def submitted_forms_list(request):
     return render(request, "approval/submitted_forms.html", {"submitted_forms": submitted_forms})
 
 
-
+# User can submit their auto filled pdf
 @login_required
 def submit_filled_pdf(request, form_type):
-    print("DEBUG: submit_filled_pdf() was called with form_type =", form_type)
-
     user = request.user
 
     # Check if the form already exists for the user
@@ -297,6 +304,7 @@ def submit_filled_pdf(request, form_type):
 def is_admin(user):
     return user.is_authenticated and user.role == 'admin'
 
+# Deleting the submitted form. Admin can delete all forms, user can only delete their own form
 @login_required
 def delete_submitted_form(request, form_id):
     if request.method == "POST":
@@ -313,7 +321,7 @@ def delete_submitted_form(request, form_id):
     
     return redirect("submitted_forms")
 
-
+# Approved forms/Admin checking the form status
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def form_status(request, form_id):
@@ -377,6 +385,7 @@ def form_status(request, form_id):
 
     return render(request, "approval/form_status.html", {"form": form})
 
+#Viewing the pdf
 @login_required
 def view_submitted_form(request, form_id):
     """Update status to 'Pending' when viewing the submitted form and serve the PDF."""
@@ -393,53 +402,7 @@ def view_submitted_form(request, form_id):
 
     return FileResponse(submitted_form.pdf_file.open("rb"), content_type="application/pdf")
 
-# @login_required
-# def upload_filled_pdf(request, form_type):
-#     """Handles the uploaded user-filled PDF form submission and updates existing submissions."""
-#     user = request.user
-#     valid_forms = {
-#         "posthumous_degree": "Posthumous Degree",
-#         "term_withdrawal": "Term Withdrawal",
-#     }
-
-#     if form_type not in valid_forms:
-#         messages.error(request, "Invalid form selection.")
-#         return redirect("form_selection")
-
-#     if request.method == "POST" and request.FILES.get("filled_pdf"):
-#         uploaded_file = request.FILES["filled_pdf"]
-#         timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-#         filename = f"{user.username}_{form_type}_{timestamp}.pdf"
-
-#         # --- Save to SubmittedForm (latest version)
-#         form_instance, created = SubmittedForm.objects.get_or_create(
-#             user=user, form_type=form_type,
-#             defaults={"status": "draft"}
-#         )
-
-#         # If updating, ensure old file is replaced
-#         form_instance.pdf_file.delete(save=False)
-#         form_instance.pdf_file = uploaded_file
-#         form_instance.pdf_file.name = f"submitted_forms/{filename}"
-#         form_instance.status = "pending"
-#         form_instance.submitted_at = timezone.now()
-#         form_instance.save()
-        
-#         # Save to FilledForm (version history)
-#         version_count = FilledForm.objects.filter(user=user, form_name=form_type).count()
-#         FilledForm.objects.create(
-#             user=user,
-#             form_name=form_type,
-#             filled_pdf=uploaded_file,
-#             version=version_count + 1,
-#         )
-
-#         messages.success(request, "Your form has been submitted and version saved.")
-#         return redirect("submitted_forms")
-
-#     messages.error(request, "No file uploaded. Please select a file.")
-#     return redirect("form_selection")
-
+# Function to upload the filled pdf and stored it in the database to review
 @login_required
 def upload_filled_pdf(request, form_type):
     user = request.user
@@ -485,6 +448,7 @@ def upload_filled_pdf(request, form_type):
     messages.error(request, "No file uploaded. Please select a file.")
     return redirect("form_selection")
 
+# View different form versions
 @login_required
 def view_form_version(request, version_id):
     version = get_object_or_404(SubmittedFormVersion, id=version_id)
@@ -493,3 +457,47 @@ def view_form_version(request, version_id):
         return HttpResponseForbidden("You do not have permission to view this file.")
 
     return FileResponse(version.pdf_file.open("rb"), content_type="application/pdf")
+
+@login_required
+def generate_latex_form(request, form_type):
+    template_map = {
+        "posthumous_degree": "form_a.tex",
+        "term_withdrawal": "form_b.tex",
+    }
+
+    if form_type not in template_map:
+        return HttpResponse("Invalid form type.", status=400)
+
+    user = request.user
+    profile = getattr(user, "profile", None)
+
+    signature_filename = ""
+    if user.signature:
+        signature_path = user.signature.path  # stored in media/signatures/
+        signature_filename = os.path.basename(signature_path)
+
+        latex_sig_dir = os.path.join(settings.BASE_DIR, "users", "latex_templates", "signatures")
+        os.makedirs(latex_sig_dir, exist_ok=True)
+
+        destination = os.path.join(latex_sig_dir, signature_filename)
+        shutil.copyfile(signature_path, destination)
+
+    context = {
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "phone": profile.phone_number if profile else "",
+        "student_id": profile.student_id if profile else "",
+        "program": "Computer Science",
+        "career": "Graduate",
+        "term": "Spring",
+        "current_date": datetime.now().strftime("%Y-%m-%d"),
+        "signature_filename": signature_filename,  # 👈 Used in LaTeX
+    }
+
+    template_path = os.path.join(settings.BASE_DIR, "users", "latex_templates", template_map[form_type])
+    filename = f"{user.username}_{form_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    filled_pdf_path = fill_latex_template(template_path, context, filename)
+
+    return FileResponse(open(filled_pdf_path, "rb"), content_type="application/pdf")

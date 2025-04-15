@@ -17,9 +17,9 @@
             <div class="p-4 border rounded shadow-sm bg-light">
                 <h5 class="text-primary"><i class="fas fa-graduation-cap"></i> Posthumous Degree Form</h5>
                 
-                <a class="btn btn-primary w-100 mt-2" href="{% url 'generate_filled_pdf' 'posthumous_degree' %}">
-                    <i class="fas fa-download"></i> Fill & Download
-                </a>
+                <a class="btn btn-primary w-100 mt-2" href="{% url 'generate_latex_form' 'posthumous_degree' %}" target="_blank">
+                    <i class="fas fa-download"></i> Fill & Download (LaTeX)
+                </a>                
                 
                 <a class="btn btn-outline-primary w-100 mt-2" href="{% static 'pdf_forms/form_a.pdf' %}" target="_blank">
                     <i class="fas fa-eye"></i> View Blank Form
@@ -41,8 +41,8 @@
             <div class="p-4 border rounded shadow-sm bg-light">
                 <h5 class="text-secondary"><i class="fas fa-file-alt"></i> Term Withdrawal Form</h5>
                 
-                <a class="btn btn-secondary w-100 mt-2" href="{% url 'generate_filled_pdf' 'term_withdrawal' %}">
-                    <i class="fas fa-download"></i> Fill & Download
+                <a class="btn btn-secondary w-100 mt-2" href="{% url 'generate_latex_form' 'term_withdrawal' %}" target="_blank">
+                    <i class="fas fa-download"></i> Fill & Download (LaTeX)
                 </a>
                 
                 <a class="btn btn-outline-secondary w-100 mt-2" href="{% static 'pdf_forms/form_b.pdf' %}" target="_blank">
