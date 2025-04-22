@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #f4f4f4; 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -136,7 +136,9 @@
 
         <div class="microsoft-login">
             <p>Or sign in with:</p>
-            <a href="{% provider_login_url 'microsoft' %}">🔹 Microsoft Login</a>
+            <a href="{% provider_login_url 'microsoft' %}" style="display: inline-block; margin-top: 15px; background-color: #2F2F91; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                🔐 Sign in with Microsoft
+            </a>            
         </div>
 
         <p>Don't have an account? <a href="{% url 'account_signup' %}">Sign up</a></p>

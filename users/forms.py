@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Profile, CustomUser
+from .models import Profile, CustomUser, Delegation
+from .models import Approver, Unit
 
 User = get_user_model()
 
@@ -47,3 +48,22 @@ class ProfileForm(forms.ModelForm):
             self.fields["first_name"].initial = user.first_name
             self.fields["last_name"].initial = user.last_name
             self.fields["email"].initial = user.email
+            
+class ApproverForm(forms.ModelForm):
+    class Meta:
+        model = Approver
+        fields = ['user', 'unit', 'is_org_wide']
+        widgets = {
+            'user': forms.Select(attrs={'class': 'form-control'}),
+            'unit': forms.Select(attrs={'class': 'form-control'}),
+            'is_org_wide': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        
+class DelegationForm(forms.ModelForm):
+    class Meta:
+        model = Delegation
+        fields = ['delegated_to', 'start_date', 'end_date']
+        widgets = {
+            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }

@@ -1,0 +1,9 @@
+
+<div class="unit-node {% if unit.subunits.all %}unit-label{% else %}unit-leaf{% endif %}" style="margin-left: {{ level|default:0|stringformat:"d" }}em;">
+    <span class="fw-semibold text-dark">
+        {{ unit.name }}
+    </span>
+</div>
+{% for child in unit.subunits.all %}
+    {% include "unit_node.html" with unit=child level=level|add:2 %}
+{% endfor %}

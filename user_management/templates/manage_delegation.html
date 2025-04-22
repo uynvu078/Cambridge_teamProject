@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Delegate Approval{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4 fw-bold">Delegate Approval</h2>
+
+  {% if messages %}
+    <div class="alert alert-info">
+      {% for message in messages %}
+        <p class="mb-0">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Form to Add Delegation -->
+  <div class="card shadow-sm p-4 mb-4">
+    <h5 class="mb-3">Assign a Delegate</h5>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-4">{{ form.delegated_to.label_tag }} {{ form.delegated_to }}</div>
+        <div class="col-md-4">{{ form.start_date.label_tag }} {{ form.start_date }}</div>
+        <div class="col-md-4">{{ form.end_date.label_tag }} {{ form.end_date }}</div>
+      </div>
+      <div class="mt-3 text-end">
+        <button type="submit" class="btn btn-primary">➕ Assign Delegate</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Existing Delegations -->
+  <div class="card p-3 shadow-sm">
+    <h5 class="mb-3">Current Delegations</h5>
+    <table class="table table-bordered text-center align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Delegate</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Active?</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for delegation in delegations %}
+        <tr>
+          <td>{{ delegation.delegated_to.username }}</td>
+          <td>{{ delegation.start_date }}</td>
+          <td>{{ delegation.end_date|default:"∞" }}</td>
+          <td>
+            {% if delegation.is_active %}
+              ✅
+            {% else %}
+              ❌
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'remove_delegation' delegation.id %}" class="btn btn-sm btn-danger">Remove</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">No delegations assigned.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-4">
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+  </div>
+</div>
+
+{% endblock %}

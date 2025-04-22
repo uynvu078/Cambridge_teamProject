@@ -2,38 +2,52 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 
-<div class="mt-5 text-center">
-    <h2 class="mb-4">Welcome, {{ user.username }}!</h2>
+<div class="container mt-5 text-center">
+  <div class="p-4 mx-auto" style="max-width: 900px; background-color: transparent;">
+    <h2 class="fw-bold mb-1">👋 Welcome, {{ user.username }}!</h2>
+    <p class="text-muted mb-4">
+      {% if user.is_superuser or user.role == "admin" %}
+        You have admin access to manage users, approvals, and workflows.
+      {% else %}
+        You can manage your profile and submit forms.
+      {% endif %}
+    </p>
 
-    {% if user.is_superuser %}
-        <p class="text-primary fw-bold">You are an Admin. You can manage users.</p>
-        <a class="btn btn-primary px-5 py-2 fw-bold" href="{% url 'user_list' %}">🔹 Manage Users</a>
-    {% else %}
-        <p class="text-secondary">You are a basic user. You can view and manage your account details.</p>
+    {% if user.is_superuser or user.role == "admin" %}
+    <div class="mb-3">
+      <h5 class="text-secondary mb-3">ADMIN Tools</h5>
+      <div class="d-flex flex-wrap justify-content-center gap-3">
+        <a href="{% url 'user_list' %}" class="btn btn-outline-primary shadow-sm px-4 py-2 rounded-pill">👥 Users</a>
+        <a href="{% url 'manage_approvers' %}" class="btn btn-outline-dark shadow-sm px-4 py-2 rounded-pill">🧑‍⚖️ Approvers</a>
+        <a href="{% url 'manage_delegation' %}" class="btn btn-outline-secondary shadow-sm px-4 py-2 rounded-pill">🤝 Delegation</a>
+        <a href="{% url 'reporting_dashboard' %}" class="btn btn-outline-success shadow-sm px-4 py-2 rounded-pill">📊 Reports</a>
+        <a href="{% url 'unit_tree_view' %}" class="btn btn-outline-info shadow-sm px-4 py-2 rounded-pill">🌳 Units</a>
+      </div>
+    </div>
     {% endif %}
 
-    <div class="d-flex flex-column align-items-center mt-3">
-        <div class="d-flex flex-wrap justify-content-center gap-4">
-            <a class="btn btn-outline-primary px-5 py-2" href="{% url 'edit_profile' %}">Edit Profile</a>
-            <a class="btn btn-outline-success px-5 py-2" href="{% url 'upload_signature' %}">Upload Signature</a>
-        </div>
-        <div class="d-flex flex-wrap justify-content-center gap-4 mt-4">
-            <a class="btn btn-outline-info px-5 py-2" href="{% url 'form_selection' %}">Fill a Form</a>
-            <a class="btn btn-outline-warning px-5 py-2" href="{% url 'submitted_forms' %}">View Submitted Forms</a>
-        </div>
+    <div class="mb-3">
+      <h5 class="text-secondary mb-3">Personal Actions</h5>
+      <div class="d-flex flex-wrap justify-content-center gap-3">
+        <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary shadow-sm px-4 py-2 rounded-pill">✏️ Edit Profile</a>
+        <a href="{% url 'upload_signature' %}" class="btn btn-outline-success shadow-sm px-4 py-2 rounded-pill">🖋️ Signature</a>
+        <a href="{% url 'form_selection' %}" class="btn btn-outline-info shadow-sm px-4 py-2 rounded-pill">📄 Fill Form</a>
+        <a href="{% url 'submitted_forms' %}" class="btn btn-outline-warning shadow-sm px-4 py-2 rounded-pill">📂 My Forms</a>
+      </div>
     </div>
 
-    {% if not user.signature %}
-        <div class="alert alert-warning text-center mt-5 p-3">
-            <strong>Reminder:</strong> You haven't uploaded a signature yet. 
-            <a href="{% url 'upload_signature' %}" class="btn btn-sm btn-success">Upload Now</a>
-        </div>
+    {% if user.signature %}
+      <div class="mt-4">
+        <img src="{{ user.signature.url }}" alt="Signature" class="img-thumbnail rounded shadow-sm" style="max-width: 220px;">
+        <p class="text-muted small mt-2">Your uploaded signature</p>
+      </div>
     {% else %}
-        <div class="mt-5">
-            <h5 class="text-muted">Your Uploaded Signature:</h5>
-            <img src="{{ user.signature.url }}" alt="Your Signature" class="img-thumbnail shadow" style="max-width: 250px;">
-        </div>
+      <div class="alert alert-warning mt-4">
+        ⚠️ You haven't uploaded a signature yet.
+        <a href="{% url 'upload_signature' %}" class="btn btn-sm btn-success ms-2">Upload</a>
+      </div>
     {% endif %}
+  </div>
 </div>
 
 {% endblock %}

@@ -15,10 +15,11 @@ from users.models import SubmittedForm, SubmittedFormVersion, FilledForm
 from users.pdf_utils import fill_pdf
 from datetime import datetime
 from functools import wraps
-from .forms import UserForm, SignatureUploadForm, ProfileForm
-from .models import CustomUser, Profile, SubmittedForm
+from .forms import UserForm, SignatureUploadForm, ProfileForm, Approver
+from .models import CustomUser, Profile, SubmittedForm, Approver
 from .pdf_utils import fill_pdf
 from users.latex_utils import fill_latex_template
+from django.http import HttpResponse
 
 # Admin views
 def admin_required(view_func):
@@ -294,6 +295,17 @@ def submit_filled_pdf(request, form_type):
             user=user,
             form_type=form_type,
         )
+        unit = user.unit
+        approver = Approver.objects.filter(unit=unit).first()
+
+        if not approver:
+            approver = Approver.objects.filter(is_org_wide=True).first()
+        if approver:
+            submitted_form.assigned_to = approver.user
+        else:
+            messages.warning(request, "No approver available for your unit. Your form will remain unassigned.")
+
+        # Save uploaded PDF
         submitted_form.pdf_file.save(f"{user.student_id}_form.pdf", django_file)
         submitted_form.save()
 
@@ -492,7 +504,7 @@ def generate_latex_form(request, form_type):
         "career": "Graduate",
         "term": "Spring",
         "current_date": datetime.now().strftime("%Y-%m-%d"),
-        "signature_filename": signature_filename,  # 👈 Used in LaTeX
+        "signature_filename": signature_filename,
     }
 
     template_path = os.path.join(settings.BASE_DIR, "users", "latex_templates", template_map[form_type])
@@ -501,3 +513,283 @@ def generate_latex_form(request, form_type):
     filled_pdf_path = fill_latex_template(template_path, context, filename)
 
     return FileResponse(open(filled_pdf_path, "rb"), content_type="application/pdf")
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.utils import timezone
+from .models import Approver, Delegation, SubmittedForm
+
+@login_required
+def delegated_approval_dashboard(request):
+    current_user = request.user
+    view_type = request.GET.get("view", "my")
+    now = timezone.now()
+
+    # Determine the actual approver (in case of delegation)
+    actual_approver = get_active_approver(current_user)
+    user_is_approver = Approver.objects.filter(user=actual_approver).exists()
+
+    if not user_is_approver:
+        messages.warning(request, "🚫 You are not authorized to approve forms.")
+        return redirect('submitted_forms')
+
+    approver = Approver.objects.get(user=actual_approver)
+    is_org_wide = approver.is_org_wide
+
+    if view_type == "my":
+        if current_user == actual_approver:
+            # Approver: show other users' submissions in their unit
+            if is_org_wide:
+                forms = SubmittedForm.objects.filter(status='pending').exclude(user=current_user)
+            else:
+                forms = SubmittedForm.objects.filter(status='pending', user__unit=approver.unit).exclude(user=current_user)
+        else:
+            # Delegate: show their own submissions only
+            forms = SubmittedForm.objects.filter(status='pending', user=current_user)
+
+    elif view_type == "delegated":
+        if current_user == actual_approver:
+            # Approver: show their own submissions
+            forms = SubmittedForm.objects.filter(status='pending', user=current_user)
+        else:
+            # Delegate: only show forms submitted by the actual approver (not others)
+            forms = SubmittedForm.objects.filter(status='pending', user=actual_approver).exclude(user=current_user)
+    else:
+        forms = SubmittedForm.objects.none()
+
+    unassigned_count = SubmittedForm.objects.filter(status='pending', assigned_to__isnull=True).count()
+
+    return render(request, 'approval_dashboard.html', {
+        'forms': forms,
+        'actual_approver': actual_approver,
+        'user_is_approver': user_is_approver,
+        'unassigned_count': unassigned_count,
+        'view_type': view_type,
+        'user_is_admin': request.user.is_superuser or getattr(request.user, 'role', '') == 'admin'
+    })
+
+from django.http import HttpResponseForbidden
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import ApproverForm
+
+@login_required
+def approve_form(request, form_id):
+    current_user = request.user
+    form = get_object_or_404(SubmittedForm, id=form_id)
+
+    # Prevent self-approval
+    if form.user == current_user:
+        return HttpResponseForbidden("You cannot approve your own submitted form.")
+
+    # Check if user is allowed to approve this form
+    actual_approver = get_active_approver(current_user)
+
+    try:
+        approver = Approver.objects.get(user=actual_approver)
+        if approver.is_org_wide or (form.user.unit == approver.unit):
+            form.status = 'approved'
+            form.save()
+            messages.success(request, f"✅ Form '{form.form_type}' approved successfully.")
+        else:
+            return HttpResponseForbidden("You are not authorized to approve this form.")
+    except Approver.DoesNotExist:
+        return HttpResponseForbidden("You are not an approver.")
+
+    return redirect(reverse('approval_dashboard') + "?view=my")
+
+
+@login_required
+def reject_form(request, form_id):
+    current_user = request.user
+    form = get_object_or_404(SubmittedForm, id=form_id)
+
+    # Prevent self-rejection
+    if form.user == current_user:
+        return HttpResponseForbidden("You cannot reject your own submitted form.")
+    
+    actual_approver = get_active_approver(current_user)
+
+    try:
+        approver = Approver.objects.get(user=actual_approver)
+        if not (approver.is_org_wide or (form.user.unit == approver.unit)):
+            return HttpResponseForbidden("You are not authorized to reject this form.")
+    except Approver.DoesNotExist:
+        return HttpResponseForbidden("You are not an approver.")
+
+    if request.method == "POST":
+        reason = request.POST.get("reason")
+        form.status = "returned"
+        form.rejection_reason = reason
+        form.save()
+        messages.warning(request, f"⚠️ Form '{form.form_type}' was returned with a comment.")
+        return redirect(reverse('approval_dashboard') + "?view=my")
+
+    return render(request, 'reject_form.html', {'form': form})
+
+@login_required
+def manage_approvers(request):
+    if not (request.user.is_superuser or request.user.role == "admin"):
+        messages.warning(request, "You are not authorized to manage approvers.")
+        return redirect("submitted_forms")
+
+    if request.method == "POST":
+        form = ApproverForm(request.POST)
+        if form.is_valid():
+            user = form.cleaned_data['user']
+            # Prevent duplicate approver entries
+            if Approver.objects.filter(user=user).exists():
+                messages.warning(request, f"{user} is already an approver.")
+            else:
+                form.save()
+                messages.success(request, f"{user} added as an approver.")
+            return redirect("manage_approvers")
+    else:
+        form = ApproverForm()
+
+    approvers = Approver.objects.select_related('user', 'unit')
+    return render(request, "manage_approvers.html", {
+        "form": form,
+        "approvers": approvers
+    })
+
+@login_required
+def remove_approver(request, approver_id):
+    if not (request.user.is_superuser or request.user.role == "admin"):
+        messages.warning(request, "You are not authorized to remove approvers.")
+        return redirect("submitted_forms")
+
+    approver = get_object_or_404(Approver, id=approver_id)
+    approver.delete()
+    messages.success(request, f"{approver.user} removed from approvers.")
+    return redirect("manage_approvers")
+
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Count, Q
+from .models import SubmittedForm, Unit
+
+@login_required
+def reporting_dashboard(request):
+    units = Unit.objects.all()
+    if not (request.user.is_superuser or request.user.role == "admin"):
+        messages.warning(request, "You are not authorized to view reports.")
+        return redirect("dashboard")
+
+    forms = SubmittedForm.objects.select_related("user", "user__unit").all()
+
+    # Filtering
+    status_filter = request.GET.get("status", "")
+    unit_filter = request.GET.get("unit", "")
+
+    if status_filter:
+        forms = forms.filter(status=status_filter)
+    if unit_filter:
+        forms = forms.filter(user__unit__id=unit_filter)
+
+    # Summary stats
+    summary = {
+        "total": forms.count(),
+        "pending": forms.filter(status="pending").count(),
+        "approved": forms.filter(status="approved").count(),
+        "returned": forms.filter(status="returned").count(),
+    }
+
+    units = Unit.objects.all()
+
+    return render(request, "reporting_dashboard.html", {
+        "forms": forms,
+        "units": units,
+        "summary": summary,
+        "status_filter": status_filter,
+        "unit_filter": unit_filter,
+    })
+
+import csv
+from django.http import HttpResponse
+from .models import SubmittedForm
+
+@login_required
+def download_approval_report(request):
+    if not request.user.is_superuser and request.user.role != "admin":
+        messages.warning(request, "You are not authorized to download reports.")
+        return redirect('reporting_dashboard')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="approval_report.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['User', 'Unit', 'Form Type', 'Status', 'Submitted At', 'Assigned To'])
+
+    for form in SubmittedForm.objects.all():
+        writer.writerow([
+            form.user.username,
+            form.user.unit.name if form.user.unit else "N/A",
+            form.form_type,
+            form.get_status_display(),
+            form.submitted_at.strftime('%Y-%m-%d %H:%M'),
+            form.assigned_to.username if form.assigned_to else "Unassigned"
+        ])
+
+    return response
+
+from .forms import DelegationForm
+from .models import Delegation, Approver
+
+@login_required
+def manage_delegation(request):
+    user = request.user
+
+    try:
+        approver = Approver.objects.get(user=user)
+    except Approver.DoesNotExist:
+        messages.error(request, "You are not an approver.")
+        return redirect('dashboard')
+
+    delegations = approver.delegations.all()
+
+    if request.method == "POST":
+        form = DelegationForm(request.POST)
+        if form.is_valid():
+            delegation = form.save(commit=False)
+            delegation.approver = approver
+            delegation.save()
+            messages.success(request, f"Delegated to {delegation.delegated_to} from {delegation.start_date} to {delegation.end_date}")
+            return redirect("manage_delegation")
+    else:
+        form = DelegationForm()
+
+    return render(request, "manage_delegation.html", {
+        "form": form,
+        "delegations": delegations
+    })
+
+
+@login_required
+def remove_delegation(request, delegation_id):
+    try:
+        delegation = Delegation.objects.get(id=delegation_id, approver__user=request.user)
+        delegation.delete()
+        messages.success(request, "Delegation removed successfully.")
+    except Delegation.DoesNotExist:
+        messages.error(request, "Delegation not found or you don't have permission.")
+    return redirect("manage_delegation")
+
+from .models import get_active_approver
+
+@login_required
+def submitted_forms_view(request):
+    submitted_forms = SubmittedForm.objects.filter(user=request.user).order_by('-submitted_at')
+
+    return render(request, "submitted_forms.html", {
+        "submitted_forms": submitted_forms
+    })
+    
+from django.shortcuts import render
+from .models import Unit
+
+def unit_tree_view(request):
+    root_units = Unit.objects.filter(parent=None)
+    return render(request, 'unit_tree.html', {'root_units': root_units})
