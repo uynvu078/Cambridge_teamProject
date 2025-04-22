@@ -2,7 +2,8 @@ from django.urls import path
 from .views import user_list, user_create, user_update, user_delete
 from .views import upload_signature, edit_profile, submitted_forms_list, form_status
 from .views import generate_filled_pdf, submit_filled_pdf, delete_submitted_form
-from .views import view_submitted_form , view_form_version
+from .views import view_submitted_form , view_form_version, delegated_approval_dashboard
+from .views import manage_delegation, remove_delegation, unit_tree_view
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -27,11 +28,20 @@ urlpatterns = [
     path("upload-filled-pdf/<str:form_type>/", views.upload_filled_pdf, name="upload_filled_pdf"),
     path('form-version/<int:version_id>/', view_form_version, name='view_form_version'),
     path('generate-latex-form/<str:form_type>/', views.generate_latex_form, name='generate_latex_form'),
-
+    path('approvals/', delegated_approval_dashboard, name='approval_dashboard'),
+    path('approve/<int:form_id>/', views.approve_form, name='approve_form'),
+    path('reject/<int:form_id>/', views.reject_form, name='reject_form'),
+    path('manage-approvers/', views.manage_approvers, name='manage_approvers'),
+    path('remove-approver/<int:approver_id>/', views.remove_approver, name='remove_approver'),
 ]
 
 urlpatterns += [
     path('generate-form/<str:form_type>/', generate_filled_pdf, name='generate_filled_pdf'),
+    path("reporting/", views.reporting_dashboard, name="reporting_dashboard"),
+    path('reporting/download/', views.download_approval_report, name='download_approval_report'),
+    path("delegate-approval/", manage_delegation, name="manage_delegation"),
+    path("delegate-approval/remove/<int:delegation_id>/", remove_delegation, name="remove_delegation"),
+    path("unit-hierarchy/", unit_tree_view, name="unit_tree_view"),
 ]
 
 if settings.DEBUG:

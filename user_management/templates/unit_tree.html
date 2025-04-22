@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <style>
+        .unit-tree {
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        .unit-node {
+            position: relative;
+            padding-left: 1.2rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .unit-node::before {
+            content: "│";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #ccc;
+        }
+
+        .unit-label::before {
+            content: "├── ";
+            color: #888;
+        }
+
+        .unit-leaf::before {
+            content: "└── ";
+            color: #888;
+        }
+    </style>
+
+    <div class="card shadow-sm p-4">
+        <h2 class="mb-4 text-center">🌳 Organizational Unit Hierarchy</h2>
+        <div class="unit-tree ms-3">
+            {% for unit in root_units %}
+                {% include "unit_node.html" with unit=unit level=0 is_last=False %}
+            {% endfor %}
+        </div>
+
+        <!-- Back Button -->
+        <div class="text-end mt-4">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

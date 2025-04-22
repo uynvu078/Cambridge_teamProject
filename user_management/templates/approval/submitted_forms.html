@@ -1,12 +1,22 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 {% block title %}Submitted Forms{% endblock %}
 {% block content %}
 
 <div class="container mt-4">
-    <h2 class="text-center mb-3">Submitted Forms for Approval</h2>
+    <h2 class="text-center mb-3">Your Submitted Forms</h2>
 
     <div class="text-center mb-4">
-        <a href="{% url 'form_selection' %}" class="btn btn-secondary">⬅ Go Back to Forms</a>
+        <a href="{% url 'form_selection' %}" class="btn btn-secondary">← Back to Forms</a>
+    </div>
+
+    <div class="text-center mb-3">
+        <a href="{% url 'approval_dashboard' %}?view=my" class="btn btn-outline-primary me-2">
+            🔍 View My Approvals
+        </a>
+        <a href="{% url 'approval_dashboard' %}?view=delegated" class="btn btn-outline-secondary">
+            👥 View Delegated Approvals
+        </a>
     </div>
 
     {% if messages %}
@@ -25,7 +35,7 @@
                     <th>Form Type</th>
                     <th>Status</th>
                     <th>Submitted At</th>
-                    <th>Versions</th>  
+                    <th>Versions</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -42,10 +52,15 @@
                             {% else %} bg-secondary {% endif %}">
                             {{ form.get_status_display }}
                         </span>
+
+                        {% if form.status == 'returned' and form.rejection_reason %}
+                            <span class="ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ form.rejection_reason }}">
+                                ❓
+                            </span>
+                        {% endif %}
                     </td>
                     <td>{{ form.submitted_at }}</td>
 
-                    <!-- Version History -->
                     <td>
                         {% if form.versions.exists %}
                             <div class="dropdown">
@@ -65,22 +80,24 @@
                         {% else %}
                             No Versions
                         {% endif %}
-                    </td>  
+                    </td>
 
-                    <td class="d-flex gap-2 justify-content-center">
-                        <!-- Update Status (Admins Only) -->
-                        {% if user.is_superuser or user.role == "admin" %}
-                        <a href="{% url 'form_status' form.id %}" class="btn btn-warning btn-sm">Update</a>
+                    <!-- Actions -->
+                    <td class="d-flex gap-2 justify-content-center align-items-center">
+                        {% if request.user.is_superuser or request.user.role == "admin" %}
+                            {% if form.user != request.user %}
+                                <a href="{% url 'form_status' form.id %}" class="btn btn-warning btn-sm">Update</a>
+                            {% else %}
+                                <span class="text-muted small">🔒 Can't update own form</span>
+                            {% endif %}
                         {% endif %}
 
-                        <!-- View File -->
                         {% if form.pdf_file %}
                             <a href="{{ form.pdf_file.url }}" target="_blank" class="btn btn-primary btn-sm">View</a>
                         {% else %}
                             <button class="btn btn-secondary btn-sm" disabled>No File</button>
                         {% endif %}
 
-                        <!-- Delete Form -->
                         <form method="post" action="{% url 'delete_submitted_form' form.id %}" class="d-inline">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger btn-sm">Remove</button>
@@ -96,5 +113,12 @@
         </table>
     </div>
 </div>
+
+<script>
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+</script>
 
 {% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Reporting Dashboard{% endblock %}
+{% block content %}
+
+<div class="container py-5">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold mb-2">
+      <span class="me-2" style="font-size: 1.2em;">📊</span>Reporting Dashboard
+    </h2>
+    <a href="{% url 'download_approval_report' %}" class="btn btn-outline-dark btn-sm mt-2">
+      📄 Download Report as CSV
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="row justify-content-center g-3 mb-4">
+    <div class="col-md-3">
+      <label for="unit" class="form-label fw-semibold text-muted small">Unit</label>
+      <select name="unit" id="unit" class="form-select">
+        <option value="">All Units</option>
+        {% for unit in units %}
+          <option value="{{ unit.id }}" {% if unit_filter == unit.id|stringformat:"s" %}selected{% endif %}>
+            {% if unit.parent %}{{ unit.parent.name }} → {% endif %}{{ unit.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label for="status" class="form-label fw-semibold text-muted small">Status</label>
+      <select name="status" id="status" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>Pending</option>
+        <option value="approved" {% if status_filter == "approved" %}selected{% endif %}>Approved</option>
+        <option value="returned" {% if status_filter == "returned" %}selected{% endif %}>Returned</option>
+      </select>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="submit" class="btn btn-dark w-100">Apply</button>
+    </div>
+  </form>
+
+  <!-- Summary -->
+  <div class="row text-center mb-4 g-3 justify-content-center">
+    {% for label, count in summary.items %}
+      <div class="col-6 col-md-2">
+        <div class="card border-0 bg-light shadow-sm">
+          <div class="card-body py-3">
+            <p class="text-muted small text-uppercase mb-1">{{ label }}</p>
+            <span class="fw-semibold fs-5">{{ count }}</span>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Table -->
+  <div class="card p-4 shadow-sm border-0">
+    <h5 class="mb-3 text-muted">Submitted Forms</h5>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle small">
+        <thead class="table-light">
+          <tr>
+            <th>User</th>
+            <th>Unit</th>
+            <th>Form Type</th>
+            <th>Status</th>
+            <th>Submitted At</th>
+            <th>Assigned To</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in forms %}
+            <tr>
+              <td>{{ form.user.username }}</td>
+              <td>{{ form.user.unit.name }}</td>
+              <td class="text-uppercase">{{ form.form_type }}</td>
+              <td>
+                <span class="badge rounded-pill
+                  {% if form.status == 'pending' %} bg-warning text-dark
+                  {% elif form.status == 'approved' %} bg-success
+                  {% elif form.status == 'returned' %} bg-danger
+                  {% else %} bg-secondary {% endif %}">
+                  {{ form.status|title }}
+                </span>
+              </td>
+              <td>{{ form.submitted_at|date:"M d, Y H:i" }}</td>
+              <td>
+                {% if form.assigned_to %}
+                  {{ form.assigned_to.username }}
+                {% else %}
+                  <span class="text-muted fst-italic">Unassigned</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-muted text-center">No forms found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Back Button -->
+  <div class="mt-4 text-start">
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+  </div>
+</div>
+
+{% endblock %}
